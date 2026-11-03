@@ -4,3 +4,5 @@
 
 # Variáveis de ambiente e senhas
 .env
+# graphify-axet
+.graphify/
