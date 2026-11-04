@@ -1,0 +1,21 @@
+name,email,password
+Maria Silva,maria.silva@example.com,senha1234
+João Pereira,joao.pereira@example.com,senha5678
+Ana Souza,ana.souza@example.com,senha91011
+Carlos Oliveira,carlos.oliveira@example.com,senha1213
+Beatriz Santos,beatriz.santos@example.com,senha1415
+Rafael Costa,rafael.costa@example.com,senha1617
+Fernanda Lima,fernanda.lima@example.com,senha1819
+Lucas Almeida,lucas.almeida@example.com,senha2021
+Juliana Rocha,juliana.rocha@example.com,senha2223
+Pedro Martins,pedro.martins@example.com,senha2425
+Camila Ferreira,camila.ferreira@example.com,senha2627
+Gustavo Barbosa,gustavo.barbosa@example.com,senha2829
+Patrícia Gomes,patricia.gomes@example.com,senha3031
+Thiago Ribeiro,thiago.ribeiro@example.com,senha3233
+Larissa Carvalho,larissa.carvalho@example.com,senha3435
+Rodrigo Nascimento,rodrigo.nascimento@example.com,senha3637
+Vanessa Araujo,vanessa.araujo@example.com,senha3839
+Eduardo Monteiro,eduardo.monteiro@example.com,senha4041
+Aline Teixeira,aline.teixeira@example.com,senha4243
+Marcelo Cardoso,marcelo.cardoso@example.com,senha4445
