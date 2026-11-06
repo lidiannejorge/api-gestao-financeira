@@ -8,8 +8,8 @@ Microsserviço responsável pelo cadastro, consulta, atualização e exclusão d
 - Autenticação de usuário por email e senha (POST /api/usuarios/autenticar), usada pelo MS2 para validar o Basic Auth das rotas protegidas.
 - Senha sempre armazenada com hash (BCrypt) e nunca retornada em nenhuma resposta de API.
 
- 
- 
+
+
 ### Arquitetura (hexagonal)
 
 ---
@@ -42,7 +42,7 @@ docker compose up -d
 - API de usuários: http://localhost:5001
 - Swagger: http://localhost:5001/swagger-ui.html
 
- 
+
 Para derrubar o ambiente:
 
 ```
@@ -75,7 +75,7 @@ Definidas no arquivo .env na raiz do projeto (veja .env.example):
 USER_DB_PASSWORD	|Senha do banco de usuários|
 Quando executado fora do Docker Compose, o serviço espera o Postgres em localhost:5433 (ver application.properties).
 
-###  Configuração da API Mock 
+###  Configuração da API Mock
 
 ---
 

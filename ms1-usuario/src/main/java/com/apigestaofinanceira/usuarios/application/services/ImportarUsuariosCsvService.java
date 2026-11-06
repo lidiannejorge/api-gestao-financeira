@@ -41,7 +41,7 @@ public class ImportarUsuariosCsvService {
                 throw new IllegalArgumentException("O arquivo CSV não possui conteúdo.");
             }
 
-            // Remove o BOM, caso exista, e valida o cabeçalho.
+            
             cabecalho = cabecalho.replace("\uFEFF", "");
 
             List<String> colunas = separarColunas(cabecalho);
