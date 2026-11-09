@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class TransacaoResponseDTO {
 
@@ -38,6 +39,8 @@ public class TransacaoResponseDTO {
 
     @Schema(example = "null")
     private String motivoRejeicao;
+
+    private List<ConversaoMoedaDTO> conversoes;
 
     public TransacaoResponseDTO() {
     }
@@ -120,5 +123,13 @@ public class TransacaoResponseDTO {
 
     public void setMotivoRejeicao(String motivoRejeicao) {
         this.motivoRejeicao = motivoRejeicao;
+    }
+
+    public List<ConversaoMoedaDTO> getConversoes() {
+        return conversoes;
+    }
+
+    public void setConversoes(List<ConversaoMoedaDTO> conversoes) {
+        this.conversoes = conversoes;
     }
 }

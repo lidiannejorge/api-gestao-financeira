@@ -1,6 +1,7 @@
 package com.apigestaofinanceira.transacoes.infrastructure.adapters.output.mockapi;
 
 import com.apigestaofinanceira.transacoes.domain.ports.output.ContaClientPort;
+import com.apigestaofinanceira.transacoes.infrastructure.config.exception.UsuarioNaoEncontradoException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -36,7 +37,11 @@ public class MockApiContaClient implements ContaClientPort {
             );
         }
 
-        ContaResponse conta = contas.get(0);
+        ContaResponse conta = contas.stream()
+                .filter(c -> c.usuarioId() != null
+                        && c.usuarioId().equals(usuarioId))
+                .findFirst()
+                .orElseThrow(() -> new UsuarioNaoEncontradoException( usuarioId ));
 
         return converterConta(conta);
     }

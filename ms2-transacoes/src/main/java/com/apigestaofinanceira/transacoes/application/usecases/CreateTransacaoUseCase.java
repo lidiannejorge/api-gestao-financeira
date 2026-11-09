@@ -6,6 +6,7 @@ import com.apigestaofinanceira.transacoes.domain.model.Transacao;
 import com.apigestaofinanceira.transacoes.domain.ports.output.ContaClientPort;
 import com.apigestaofinanceira.transacoes.domain.ports.output.TransacaoRepositoryPort;
 import com.apigestaofinanceira.transacoes.domain.ports.output.UsuarioClientPort;
+import com.apigestaofinanceira.transacoes.infrastructure.config.exception.UsuarioNaoEncontradoException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,10 +21,7 @@ public class CreateTransacaoUseCase {
     private final UsuarioClientPort usuarioClient;
     private final ContaClientPort contaClient;
 
-    public CreateTransacaoUseCase(
-            TransacaoRepositoryPort transacaoRepository,
-            UsuarioClientPort usuarioClient,
-            ContaClientPort contaClient) {
+    public CreateTransacaoUseCase(TransacaoRepositoryPort transacaoRepository, UsuarioClientPort usuarioClient, ContaClientPort contaClient) {
 
         this.transacaoRepository = transacaoRepository;
         this.usuarioClient = usuarioClient;
@@ -35,14 +33,12 @@ public class CreateTransacaoUseCase {
         validarRegras(transacao);
 
         if (!usuarioClient.usuarioExiste(transacao.getUsuarioId())) {
-            throw new IllegalArgumentException("Usuário não encontrado.");
+            throw new UsuarioNaoEncontradoException(transacao.getUsuarioId());
         }
 
         if (transacao.getUsuarioDestinoId() != null) {
             if (!usuarioClient.usuarioExiste(transacao.getUsuarioDestinoId())) {
-                throw new IllegalArgumentException(
-                        "Usuário destinatário não encontrado."
-                );
+                throw new IllegalArgumentException("Usuário destinatário não encontrado.");
             }
         }
 
@@ -51,14 +47,12 @@ public class CreateTransacaoUseCase {
         }
 
         // Consulta a conta de origem para conhecer o saldo atual.
-        ContaClientPort.ContaDados contaOrigem =
-                contaClient.consultarConta(transacao.getUsuarioId());
+        ContaClientPort.ContaDados contaOrigem = contaClient.consultarConta(transacao.getUsuarioId());
 
         // Depósitos não precisam passar pela validação de limites.
         if (transacao.getTipo() != TipoTransacao.DEPOSITO) {
 
-            String motivoRejeicao =
-                    verificarLimites(transacao, contaOrigem);
+            String motivoRejeicao = verificarLimites(transacao, contaOrigem);
 
             if (motivoRejeicao != null) {
                 transacao.setStatus(StatusTransacao.REJEITADA);
@@ -74,14 +68,10 @@ public class CreateTransacaoUseCase {
         if (transacao.getTipo() == TipoTransacao.TRANSFERENCIA) {
 
             try {
-                contaDestino = contaClient.consultarConta(
-                        transacao.getUsuarioDestinoId()
-                );
+                contaDestino = contaClient.consultarConta(transacao.getUsuarioDestinoId());
             } catch (IllegalArgumentException e) {
                 transacao.setStatus(StatusTransacao.REJEITADA);
-                transacao.setMotivoRejeicao(
-                        "Conta do usuário destinatário não encontrada."
-                );
+                transacao.setMotivoRejeicao("Conta do usuário destinatário não encontrada.");
 
                 return transacaoRepository.salvar(transacao);
             }
@@ -99,48 +89,58 @@ public class CreateTransacaoUseCase {
             case DEPOSITO -> {
                 BigDecimal novoSaldo = contaOrigem.saldo().add(valor);
 
-                contaClient.atualizarSaldo(
-                        transacao.getUsuarioId(),
-                        novoSaldo
-                );
+                contaClient.atualizarSaldo(transacao.getUsuarioId(), novoSaldo);
             }
 
             case SAQUE, COMPRA -> {
                 BigDecimal novoSaldo = contaOrigem.saldo().subtract(valor);
 
-                contaClient.atualizarSaldo(
-                        transacao.getUsuarioId(),
-                        novoSaldo
-                );
+                contaClient.atualizarSaldo(transacao.getUsuarioId(), novoSaldo);
             }
 
             case TRANSFERENCIA -> {
-                BigDecimal novoSaldoOrigem =
-                        contaOrigem.saldo().subtract(valor);
 
-                BigDecimal novoSaldoDestino =
-                        contaDestino.saldo().add(valor);
+                BigDecimal novoSaldoOrigem = contaOrigem.saldo().subtract(valor);
 
-                // Primeiro desconta do remetente.
-                contaClient.atualizarSaldo(
-                        transacao.getUsuarioId(),
-                        novoSaldoOrigem
-                );
+                BigDecimal novoSaldoDestino = contaDestino.saldo().add(valor);
 
-                // Depois credita ao destinatário.
-                contaClient.atualizarSaldo(
-                        transacao.getUsuarioDestinoId(),
-                        novoSaldoDestino
-                );
+
+                contaClient.atualizarSaldo(transacao.getUsuarioId(), novoSaldoOrigem);
+
+                try {
+
+
+                    contaClient.atualizarSaldo(transacao.getUsuarioDestinoId(), novoSaldoDestino);
+
+                } catch (RuntimeException erroCredito) {
+
+                    try {
+
+                        contaClient.atualizarSaldo(transacao.getUsuarioId(), contaOrigem.saldo());
+
+                    } catch (RuntimeException erroCompensacao) {
+
+                        IllegalStateException erro = new IllegalStateException("Falha no crédito da transferência e também na " + "compensação do débito. " + "É necessária conciliação manual.", erroCredito);
+
+                        erro.addSuppressed(erroCompensacao);
+
+                        throw erro;
+                    }
+
+                    transacao.setStatus(StatusTransacao.REJEITADA);
+                    transacao.setMotivoRejeicao("Falha na transferência, débito compensado.");
+
+                    transacaoRepository.salvar(transacao);
+
+                    throw new IllegalStateException("Transferência rejeitada. O débito foi compensado.", erroCredito);
+                }
             }
         }
 
         return transacaoRepository.salvar(transacao);
     }
 
-    private String verificarLimites(
-            Transacao transacao,
-            ContaClientPort.ContaDados conta) {
+    private String verificarLimites(Transacao transacao, ContaClientPort.ContaDados conta) {
 
         BigDecimal valor = transacao.getValor();
 
@@ -154,18 +154,9 @@ public class CreateTransacaoUseCase {
 
         LocalDate dataTransacao = transacao.getDataHora().toLocalDate();
 
-        List<Transacao> transacoesDoUsuario =
-                transacaoRepository.buscarPorUsuarioId(
-                        transacao.getUsuarioId()
-                );
+        List<Transacao> transacoesDoUsuario = transacaoRepository.buscarPorUsuarioId(transacao.getUsuarioId());
 
-        BigDecimal totalDoDia = transacoesDoUsuario.stream()
-                .filter(t -> t.getStatus() == StatusTransacao.APROVADA)
-                .filter(t -> t.getTipo() != TipoTransacao.DEPOSITO)
-                .filter(t -> t.getDataHora().toLocalDate()
-                        .equals(dataTransacao))
-                .map(Transacao::getValor)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalDoDia = transacoesDoUsuario.stream().filter(t -> t.getStatus() == StatusTransacao.APROVADA).filter(t -> t.getTipo() != TipoTransacao.DEPOSITO).filter(t -> t.getDataHora().toLocalDate().equals(dataTransacao)).map(Transacao::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalComNovaTransacao = totalDoDia.add(valor);
 
@@ -179,40 +170,28 @@ public class CreateTransacaoUseCase {
     private void validarRegras(Transacao transacao) {
 
         if (transacao.getTipo() == null) {
-            throw new IllegalArgumentException(
-                    "O tipo da transação é obrigatório."
-            );
+            throw new IllegalArgumentException("O tipo da transação é obrigatório.");
         }
 
         if (transacao.getTipo() == TipoTransacao.TRANSFERENCIA) {
 
             if (transacao.getUsuarioDestinoId() == null) {
-                throw new IllegalArgumentException(
-                        "A transferência exige um usuário destinatário."
-                );
+                throw new IllegalArgumentException("A transferência exige um usuário destinatário.");
             }
 
-            if (transacao.getUsuarioDestinoId()
-                    .equals(transacao.getUsuarioId())) {
-                throw new IllegalArgumentException(
-                        "O usuário destinatário deve ser diferente do remetente."
-                );
+            if (transacao.getUsuarioDestinoId().equals(transacao.getUsuarioId())) {
+                throw new IllegalArgumentException("O usuário destinatário deve ser diferente do remetente.");
             }
 
         } else if (transacao.getUsuarioDestinoId() != null) {
 
-            throw new IllegalArgumentException(
-                    "Somente transferências podem possuir usuário destinatário."
-            );
+            throw new IllegalArgumentException("Somente transferências podem possuir usuário destinatário.");
         }
 
         if (transacao.getTipo() == TipoTransacao.COMPRA) {
 
-            if (transacao.getCategoria() == null
-                    || transacao.getCategoria().isBlank()) {
-                throw new IllegalArgumentException(
-                        "A categoria é obrigatória para compras."
-                );
+            if (transacao.getCategoria() == null || transacao.getCategoria().isBlank()) {
+                throw new IllegalArgumentException("A categoria é obrigatória para compras.");
             }
         }
     }
