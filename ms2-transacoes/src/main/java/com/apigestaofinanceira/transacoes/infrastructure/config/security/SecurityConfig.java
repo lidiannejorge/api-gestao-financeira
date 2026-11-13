@@ -18,9 +18,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final TitularidadeFilter titularidadeFilter;
+    private final Ms1AuthenticationEntryPoint authenticationEntryPoint;
 
-    public SecurityConfig(TitularidadeFilter titularidadeFilter) {
+    public SecurityConfig(TitularidadeFilter titularidadeFilter, Ms1AuthenticationEntryPoint authenticationEntryPoint) {
         this.titularidadeFilter = titularidadeFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
     @Bean
@@ -48,7 +50,7 @@ public class SecurityConfig {
                         // exige usuário autenticado.
                         .anyRequest().authenticated()
                 )
-                .httpBasic(basic -> {})
+                .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint))
                 // Depois que o Basic Auth autentica o usuário, confere
                 // se ele não está tentando acessar dados de outro
                 // usuário via X-Usuario-Id.

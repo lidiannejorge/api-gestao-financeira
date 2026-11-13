@@ -20,8 +20,11 @@ public class Ms1UsuarioClient implements UsuarioClientPort {
     @Override
     public boolean usuarioExiste(Long usuarioId) {
         try {
+            // Usa a rota /existe (sem autenticação, sem expor dados
+            // pessoais) em vez de /{id}, que agora exige login e só
+            // permite ao próprio usuário acessar a própria conta.
             ms1RestClient.get()
-                    .uri("/api/usuarios/{id}", usuarioId)
+                    .uri("/api/usuarios/{id}/existe", usuarioId)
                     .retrieve()
                     .toBodilessEntity();
 

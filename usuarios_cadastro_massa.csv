@@ -1,0 +1,57 @@
+name,email,password
+Maria Silva,maria.silva@example.com,senha1234
+João Pereira,joao.pereira@example.com,senha5678
+Ana Souza,ana.souza@example.com,senha91011
+Carlos Oliveira,carlos.oliveira@example.com,senha1213
+Beatriz Santos,beatriz.santos@example.com,senha1415
+Rafael Costa,rafael.costa@example.com,senha1617
+Fernanda Lima,fernanda.lima@example.com,senha1819
+Lucas Almeida,lucas.almeida@example.com,senha2021
+Juliana Rocha,juliana.rocha@example.com,senha2223
+Pedro Martins,pedro.martins@example.com,senha2425
+Camila Ferreira,camila.ferreira@example.com,senha2627
+Gustavo Barbosa,gustavo.barbosa@example.com,senha2829
+Patrícia Gomes,patricia.gomes@example.com,senha3031
+Thiago Ribeiro,thiago.ribeiro@example.com,senha3233
+Larissa Carvalho,larissa.carvalho@example.com,senha3435
+Rodrigo Nascimento,rodrigo.nascimento@example.com,senha3637
+Vanessa Araujo,vanessa.araujo@example.com,senha3839
+Eduardo Monteiro,eduardo.monteiro@example.com,senha4041
+Aline Teixeira,aline.teixeira@example.com,senha4243
+Marcelo Cardoso,marcelo.cardoso@example.com,senha4445
+Maria ferreira,mariaferreira@teste.com,12345678
+josesa,jo@teste.com,@BU763998
+Ana lisa,lisa@gmail.com,098635etru
+Bruno Silva,bruno.silva@gmail.com,Senha123@
+Carla Mendes,carla.mendes@gmail.com,Carla2026#
+Diego Santos,diego.santos@gmail.com,Diego@456
+Fernanda Alves,fernanda.alves@gmail.com,Fernanda789!
+Gustavo Rocha,gustavo.rocha@gmail.com,GusRo
+,emailinvalido.com,12345678
+João Silva,joao.gmail.com,123
+Maria Souza,maria@,abc12
+,ana@email,1234567
+Carlos,carlos@email,12
+Lucas Oliveira,lucas.oliveira@gmail.com,Lucas@123
+Mariana Ferreira,mariana.ferreira@gmail.com,Mariana@2026
+Rafael Costa,rafael.costa@gmail.com,Rafael#456
+Patricia Lima,patricia.lima@gmail.com,Patricia@789
+Thiago Santos,thiago.santos@gmail.com,Thiago#123
+Amanda Rocha,amanda.rocha@gmail.com,Amanda@456
+Felipe Martins,felipe.martins@gmail.com,Felipe#789
+Camila Alves,camila.alves@gmail.com,Camila@2026
+Guilherme Pereira,guilherme.pereira@gmail.com,Guilherme#321
+Beatriz Souza,beatriz.souza@gmail.com,Beatriz@654
+Larissa Gomes,larissa.gomes@gmail.com,Larissa@123
+Henrique Dias,henrique.dias@gmail.com,Henrique#456
+Vanessa Ribeiro,vanessa.ribeiro@gmail.com,Vanessa@789
+Matheus Castro,matheus.castro@gmail.com,Matheus#2026
+Daniela Freitas,daniela.freitas@gmail.com,Daniela@321
+,paulo.silva@gmail.com,Paulo@123
+Renata Martins,renata.gmail.com,Renata@456
+Eduardo Lima,eduardo.lima@gmail.com,123
+Lidiane,lid@teste.com,12345678
+leticia,leti@teste.com,12345678
+jose humberto,jose@teste.com,12345678
+alberto,alberto@teste.com,12345678
+

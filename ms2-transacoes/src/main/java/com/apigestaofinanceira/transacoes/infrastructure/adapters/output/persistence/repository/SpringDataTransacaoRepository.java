@@ -15,13 +15,16 @@ public interface SpringDataTransacaoRepository
     // Busca todas as transações de um usuário
     List<TransacaoEntity> findByUsuarioId(Long usuarioId);
 
-    // Busca transações com filtros opcionais
+    // Busca transações com filtros opcionais, sempre ordenadas por
+    // data/hora - sem isso, o CSV e os agrupamentos por dia/mês saem
+    // em ordem arbitrária (depende da ordem física das linhas no banco).
     @Query("""
         SELECT t FROM TransacaoEntity t
         WHERE t.usuarioId = :usuarioId
         AND t.dataHora >= COALESCE(:inicio, t.dataHora)
         AND t.dataHora <= COALESCE(:fim, t.dataHora)
         AND t.tipo = COALESCE(:tipo, t.tipo)
+        ORDER BY t.dataHora ASC
     """)
     List<TransacaoEntity> buscarComFiltros(
             @Param("usuarioId") Long usuarioId,

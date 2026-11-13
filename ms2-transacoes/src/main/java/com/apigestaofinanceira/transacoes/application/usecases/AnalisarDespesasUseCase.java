@@ -7,6 +7,7 @@ import com.apigestaofinanceira.transacoes.domain.ports.output.TransacaoRepositor
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -32,10 +33,12 @@ public class AnalisarDespesasUseCase {
             DateTimeFormatter.ofPattern("yyyy-MM");
 
     private final TransacaoRepositoryPort transacaoRepository;
+    private final Clock clock;
 
     public AnalisarDespesasUseCase(
-            TransacaoRepositoryPort transacaoRepository) {
+            TransacaoRepositoryPort transacaoRepository, Clock clock) {
         this.transacaoRepository = transacaoRepository;
+        this.clock = clock;
     }
 
     public Resultado executar(
@@ -44,11 +47,11 @@ public class AnalisarDespesasUseCase {
         // Período padrão: mês atual, quando não informado.
         LocalDate dataInicio = inicio != null
                 ? inicio
-                : YearMonth.now().atDay(1);
+                : YearMonth.now(clock).atDay(1);
 
         LocalDate dataFim = fim != null
                 ? fim
-                : YearMonth.now().atEndOfMonth();
+                : YearMonth.now(clock).atEndOfMonth();
 
         LocalDateTime inicioDateTime = dataInicio.atStartOfDay();
         LocalDateTime fimDateTime = dataFim.atTime(LocalTime.MAX);

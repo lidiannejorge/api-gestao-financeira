@@ -10,6 +10,7 @@ import com.apigestaofinanceira.transacoes.infrastructure.config.exception.Usuari
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,12 +21,14 @@ public class CreateTransacaoUseCase {
     private final TransacaoRepositoryPort transacaoRepository;
     private final UsuarioClientPort usuarioClient;
     private final ContaClientPort contaClient;
+    private final Clock clock;
 
-    public CreateTransacaoUseCase(TransacaoRepositoryPort transacaoRepository, UsuarioClientPort usuarioClient, ContaClientPort contaClient) {
+    public CreateTransacaoUseCase(TransacaoRepositoryPort transacaoRepository, UsuarioClientPort usuarioClient, ContaClientPort contaClient, Clock clock) {
 
         this.transacaoRepository = transacaoRepository;
         this.usuarioClient = usuarioClient;
         this.contaClient = contaClient;
+        this.clock = clock;
     }
 
     public Transacao executar(Transacao transacao) {
@@ -43,7 +46,7 @@ public class CreateTransacaoUseCase {
         }
 
         if (transacao.getDataHora() == null) {
-            transacao.setDataHora(LocalDateTime.now());
+            transacao.setDataHora(LocalDateTime.now(clock));
         }
 
         // Consulta a conta de origem para conhecer o saldo atual.
@@ -90,12 +93,18 @@ public class CreateTransacaoUseCase {
                 BigDecimal novoSaldo = contaOrigem.saldo().add(valor);
 
                 contaClient.atualizarSaldo(transacao.getUsuarioId(), novoSaldo);
+
+                return salvarComCompensacaoDeSaldo(
+                        transacao, transacao.getUsuarioId(), contaOrigem.saldo());
             }
 
             case SAQUE, COMPRA -> {
                 BigDecimal novoSaldo = contaOrigem.saldo().subtract(valor);
 
                 contaClient.atualizarSaldo(transacao.getUsuarioId(), novoSaldo);
+
+                return salvarComCompensacaoDeSaldo(
+                        transacao, transacao.getUsuarioId(), contaOrigem.saldo());
             }
 
             case TRANSFERENCIA -> {
@@ -134,10 +143,90 @@ public class CreateTransacaoUseCase {
 
                     throw new IllegalStateException("Transferência rejeitada. O débito foi compensado.", erroCredito);
                 }
+
+                // Débito na origem e crédito no destino já foram feitos
+                // com sucesso. Se o registro da transação falhar agora,
+                // os dois saldos precisam ser revertidos.
+                return salvarTransferenciaComCompensacaoDeSaldo(
+                        transacao,
+                        transacao.getUsuarioId(), contaOrigem.saldo(),
+                        transacao.getUsuarioDestinoId(), contaDestino.saldo());
             }
         }
 
         return transacaoRepository.salvar(transacao);
+    }
+
+    // Salva a transação após o saldo já ter sido atualizado na conta.
+    // Se o salvamento falhar, tenta reverter o saldo para o valor
+    // original, evitando que o débito/crédito fique "órfão" sem o
+    // devido registro da transação.
+    private Transacao salvarComCompensacaoDeSaldo(
+            Transacao transacao,
+            Long usuarioIdParaCompensar,
+            BigDecimal saldoOriginal) {
+
+        try {
+            return transacaoRepository.salvar(transacao);
+
+        } catch (RuntimeException erroSalvar) {
+
+            try {
+                contaClient.atualizarSaldo(usuarioIdParaCompensar, saldoOriginal);
+
+            } catch (RuntimeException erroCompensacao) {
+
+                IllegalStateException erro = new IllegalStateException(
+                        "Falha ao registrar a transação e também ao " +
+                                "compensar o saldo. É necessária conciliação manual.",
+                        erroSalvar);
+
+                erro.addSuppressed(erroCompensacao);
+
+                throw erro;
+            }
+
+            throw new IllegalStateException(
+                    "Transação não registrada. O saldo foi revertido.",
+                    erroSalvar);
+        }
+    }
+
+    // Mesma lógica de salvarComCompensacaoDeSaldo, mas para
+    // transferências: em caso de falha ao salvar, reverte o saldo
+    // tanto da conta de origem quanto da conta de destino.
+    private Transacao salvarTransferenciaComCompensacaoDeSaldo(
+            Transacao transacao,
+            Long usuarioOrigemId,
+            BigDecimal saldoOriginalOrigem,
+            Long usuarioDestinoId,
+            BigDecimal saldoOriginalDestino) {
+
+        try {
+            return transacaoRepository.salvar(transacao);
+
+        } catch (RuntimeException erroSalvar) {
+
+            try {
+                contaClient.atualizarSaldo(usuarioOrigemId, saldoOriginalOrigem);
+                contaClient.atualizarSaldo(usuarioDestinoId, saldoOriginalDestino);
+
+            } catch (RuntimeException erroCompensacao) {
+
+                IllegalStateException erro = new IllegalStateException(
+                        "Falha ao registrar a transferência e também ao " +
+                                "compensar os saldos. É necessária conciliação manual.",
+                        erroSalvar);
+
+                erro.addSuppressed(erroCompensacao);
+
+                throw erro;
+            }
+
+            throw new IllegalStateException(
+                    "Transferência não registrada. Os saldos foram revertidos.",
+                    erroSalvar);
+        }
     }
 
     private String verificarLimites(Transacao transacao, ContaClientPort.ContaDados conta) {

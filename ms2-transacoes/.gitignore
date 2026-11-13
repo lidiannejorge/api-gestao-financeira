@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Certificado da rede corporativa - uso local apenas
+zscaler.cer
+Dockerfile.local

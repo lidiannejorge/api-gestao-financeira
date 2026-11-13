@@ -8,6 +8,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -17,22 +18,29 @@ import java.util.Optional;
 public class BrasilApiCambioClient implements CambioClientPort {
 
     private final RestClient brasilApiRestClient;
+    private final Clock clock;
 
     private static final DateTimeFormatter FORMATO_DATA =
             DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public BrasilApiCambioClient(
-            @Qualifier("brasilApiRestClient") RestClient brasilApiRestClient) {
+            @Qualifier("brasilApiRestClient") RestClient brasilApiRestClient,
+            Clock clock) {
         this.brasilApiRestClient = brasilApiRestClient;
+        this.clock = clock;
     }
 
     @Override
     public Optional<Cotacao> buscarCotacao(String moeda) {
 
-        // Procura a última cotação disponível nos últimos 7 dias.
-        for (int dias = 0; dias < 7; dias++) {
+        // A BrasilAPI não permite consultar a cotação do dia de hoje
+        // (retorna 400 - NO_TODAY_DATE), então a busca sempre começa
+        // a partir de ontem. A própria API já devolve a última cotação
+        // disponível em fins de semana/feriados (ex.: consultar sábado
+        // retorna a de sexta-feira).
+        for (int dias = 1; dias <= 7; dias++) {
 
-            LocalDate dataConsulta = LocalDate.now().minusDays(dias);
+            LocalDate dataConsulta = LocalDate.now(clock).minusDays(dias);
 
             Optional<Cotacao> cotacao =
                     buscarCotacaoNaData(moeda, dataConsulta);

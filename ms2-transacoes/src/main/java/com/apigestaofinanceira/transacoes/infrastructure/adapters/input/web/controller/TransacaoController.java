@@ -111,6 +111,8 @@ public class TransacaoController {
             @RequestParam(required = false)
             TipoTransacao tipo) {
 
+        validarPeriodo(inicio, fim);
+
         LocalDateTime dataInicio = inicio != null
                 ? inicio.atStartOfDay()
                 : null;
@@ -153,6 +155,8 @@ public class TransacaoController {
             @DateTimeFormat(pattern = "dd/MM/yyyy")
             LocalDate fim) {
 
+        validarPeriodo(inicio, fim);
+
         AnalisarDespesasUseCase.Resultado resultado =
                 analisarDespesasUseCase.executar(usuarioId, inicio, fim);
 
@@ -193,6 +197,8 @@ public class TransacaoController {
             @DateTimeFormat(pattern = "dd/MM/yyyy")
             LocalDate fim) {
 
+        validarPeriodo(inicio, fim);
+
         LocalDateTime dataInicio = inicio != null
                 ? inicio.atStartOfDay()
                 : null;
@@ -216,5 +222,16 @@ public class TransacaoController {
                 .headers(headers)
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(csv);
+    }
+
+    // Garante que um período inválido (início depois do fim) não
+    // devolva silenciosamente uma lista vazia - o cliente precisa
+    // saber que o filtro informado está errado.
+    private void validarPeriodo(LocalDate inicio, LocalDate fim) {
+
+        if (inicio != null && fim != null && inicio.isAfter(fim)) {
+            throw new IllegalArgumentException(
+                    "A data de início não pode ser posterior à data de fim.");
+        }
     }
 }
