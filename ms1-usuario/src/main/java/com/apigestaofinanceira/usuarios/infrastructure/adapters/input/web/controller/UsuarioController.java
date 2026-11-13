@@ -14,12 +14,14 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 @Tag(name = "Usuários")
+@SecurityRequirement(name = "basicAuth")
 @RestController
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
@@ -64,6 +66,13 @@ public class UsuarioController {
     public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id) {
         Usuario usuario = findUsuarioUseCase.buscarPorId(id).orElseThrow(() -> new UsuarioNotFoundException(id));
         return ResponseEntity.ok(usuarioWebMapper.toResponse(usuario));
+    }
+    @Operation(summary = "Verifica se um usuário existe pelo identificador (usado pelo MS2 para validar destinatários de transação, sem expor dados pessoais)")
+    @GetMapping("/{id}/existe")
+    public ResponseEntity<Void> existe(@PathVariable Long id) {
+        return findUsuarioUseCase.buscarPorId(id).isPresent()
+                ? ResponseEntity.ok().build()
+                : ResponseEntity.notFound().build();
     }
     @Operation(summary = "Atualiza o nome e o email de um usuário existente")
     @PutMapping("/{id}")

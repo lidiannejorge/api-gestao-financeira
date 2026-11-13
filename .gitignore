@@ -6,3 +6,11 @@
 .env
 # graphify-axet
 .graphify/
+
+# Certificado da rede corporativa - uso local apenas
+zscaler.cer
+Dockerfile.local
+
+
+# Override local com certificado corporativo
+docker-compose.override.yml
